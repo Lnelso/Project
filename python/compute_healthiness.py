@@ -10,8 +10,6 @@ import urllib.request
 import numpy as np
 import collections
 import json
-import sys
-sys.path.insert(0, "/Users/Lionel/Documents/Ada/Project/python")
 import clean_recipes_datasets as clean
 engine = inflect.engine()
 
