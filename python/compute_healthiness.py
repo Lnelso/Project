@@ -10,13 +10,11 @@ import urllib.request
 import numpy as np
 import collections
 import json
-import sys
-sys.path.insert(0, "/Users/Lionel/Documents/Ada/Project/python")
 import clean_recipes_datasets as clean
 engine = inflect.engine()
 
 # We convert every quantities units to grams, and delete the recipes that contains unconvertable unit or unmappable ingredients
-def recipes_to_usda(quantities_recipes, mapping_usda_id):
+def recipes_to_usda(quantities_recipes, mapping_usda_id, convert_gr):
     to_remove = []
     for recipe in tqdm.tqdm_notebook(quantities_recipes):
         failure = False
@@ -38,7 +36,7 @@ def recipes_to_usda(quantities_recipes, mapping_usda_id):
     return quantities_recipes
 
 
-def median_weight_ingredient(quantities_recipes):
+def median_weight_ingredient(quantities_recipes, convert_gr):
     to_remove = []
     for recipe in tqdm.tqdm_notebook(quantities_recipes):
         failure = False
@@ -67,7 +65,7 @@ def median_weight_ingredient(quantities_recipes):
         
     return median_weight_by_ingredient_df
 
-def map_one_recipe_usda(recipe, mapping_usda_id):
+def map_one_recipe_usda(recipe, mapping_usda_id, convert_gr):
     recipe_copy = []
     for ingr in recipe:
         recipe_copy.append(ingr.copy())
@@ -137,16 +135,25 @@ def score(fat, sat_fat, sugar, salt):
     return score_total
     
 def score_cat(cat, medium, upper):
+
+    medium_y = 3
+    upper_y = 25 
+
     if (cat < medium):
-        return 0
-    elif (cat > medium and cat < upper):
-        return 4
-    else:
-        return 20
+        return cat * medium_y * 1.0 / medium
     
-def beautiful_print(recipe, mapping_usda_id, nutrients_mapping):
+    else :
+        slope = 1.0 * (upper_y - medium_y) / (upper - medium)
+        if (cat > medium and cat < upper):
+            x = cat - medium
+            return x * slope + medium_y
+        else:
+            x = cat - upper
+            return x * slope + upper_y
+    
+def beautiful_print(recipe, mapping_usda_id, nutrients_mapping, convert_gr):
     total_weight = 0
-    mapped_recipe = map_one_recipe_usda(recipe, mapping_usda_id)
+    mapped_recipe = map_one_recipe_usda(recipe, mapping_usda_id, convert_gr)
     table_nut = []
     
     for ingr in mapped_recipe:
@@ -155,12 +162,12 @@ def beautiful_print(recipe, mapping_usda_id, nutrients_mapping):
         
     for e, ingr in enumerate(table_nut):
         weight = (mapped_recipe[e][0] / total_weight) * 100
-        print(str(recipe[e][2]) + ': ' + "{0:.2f}".format(weight) + '%' + ' => content(grams): ' + "(fat={0:.4f}, sat_fat={1:.4f}, sugar={2:.4f}, salt={3:.4f})".format(ingr[0], ingr[1], ingr[2], ingr[3]))
+        print("{:20s}".format(str(recipe[e][2])) + ': ' + "{:10s}".format("{0:5.2f}".format(weight) + '% =>') + ' content(grams): ' + "(fat={0:7.4f}, sat_fat={1:7.4f}, sugar={2:7.4f}, salt={3:.4f})".format(ingr[0], ingr[1], ingr[2], ingr[3]))
         
         
-def compute_healthiness(recipe, mapping_usda_id, nutrients_mapping):
-    mapped_recipe = map_one_recipe_usda(recipe, mapping_usda_id)
+def compute_healthiness(recipe, mapping_usda_id, nutrients_mapping, convert_gr):
+    mapped_recipe = map_one_recipe_usda(recipe, mapping_usda_id, convert_gr)
     fat, sat_fat, sugar, salt = compute_profile(mapped_recipe, nutrients_mapping)
     score_total = score(fat, sat_fat, sugar, salt)
-    beautiful_print(recipe, mapping_usda_id, nutrients_mapping)
+    beautiful_print(recipe, mapping_usda_id, nutrients_mapping, convert_gr)
     return score_total
