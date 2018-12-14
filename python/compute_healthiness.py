@@ -26,7 +26,18 @@ def recipes_to_usda(quantities_recipes, mapping_usda_id, convert_gr):
                 except KeyError:
                     failure = True
             except KeyError:
-                failure = True
+                if(ingr[1] == ""):
+                    print("came here")
+                    try:
+                        ingr[1] = unit_quantities[clean.clean_ingredient(ingr[2])]
+                        try:
+                            ingr[2] = mapping_usda_id[clean.clean_ingredient(ingr[2])]
+                        except KeyError:
+                            failure = True
+                    except KeyError:
+                        failure = True
+                else:
+                    failure = True
         if(failure):
             to_remove.append(recipe)
     quantities_recipes = [list(map(lambda x: (x[0] * x[1], x[2]), recipe)) for recipe in tqdm.tqdm_notebook(quantities_recipes) if recipe not in to_remove]
@@ -45,7 +56,14 @@ def median_weight_ingredient(quantities_recipes, convert_gr):
                 ingr[1] = convert_gr[ingr[1]]
                 ingr[2] = clean.clean_ingredient(ingr[2])
             except KeyError:
-                failure = True
+                if(ingr[1] == ""):
+                    try:
+                        ingr[1] = unit_quantities[clean.clean_ingredient(ingr[2])]
+                        ingr[2] = clean.clean_ingredient(ingr[2])
+                    except KeyError:
+                        failure = True
+                else:
+                    failure = True
         if(failure):
             to_remove.append(recipe)
     quantities_recipes = [list(map(lambda x: (x[0] * x[1], x[2]), recipe)) for recipe in tqdm.tqdm_notebook(quantities_recipes) if recipe not in to_remove]
@@ -77,10 +95,20 @@ def map_one_recipe_usda(recipe, mapping_usda_id, convert_gr):
             try:
                 ingr[2] = mapping_usda_id[clean.clean_ingredient(ingr[2])]
             except KeyError:
-                print(ingr[2])
                 failure = True
         except KeyError:
-            failure = True
+            if(ingr[1] == ""):
+                print("came here")
+                try:
+                    ingr[1] = unit_quantities[clean.clean_ingredient(ingr[2])]
+                    try:
+                        ingr[2] = mapping_usda_id[clean.clean_ingredient(ingr[2])]
+                    except KeyError:
+                        failure = True
+                except KeyError:
+                    failure = True
+            else:
+                failure = True
             
     if(failure):
         print('Mapping of the recipe has failed.')
