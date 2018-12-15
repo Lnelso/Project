@@ -89,13 +89,15 @@ def map_one_recipe_usda(recipe, mapping_usda_id, convert_gr, unit_quantities):
         recipe_copy.append(ingr.copy())
     
     failure = False
-    for ingr in recipe_copy:
+    failure_index = 0
+    for i, ingr in enumerate(recipe_copy):
         try:
             ingr[1] = convert_gr[ingr[1]]
             try:
                 ingr[2] = mapping_usda_id[clean.clean_ingredient(ingr[2])]
             except KeyError:
                 failure = True
+                failure_index = i
         except KeyError:
             if(ingr[1] == ""):
                 try:
@@ -104,13 +106,17 @@ def map_one_recipe_usda(recipe, mapping_usda_id, convert_gr, unit_quantities):
                         ingr[2] = mapping_usda_id[clean.clean_ingredient(ingr[2])]
                     except KeyError:
                         failure = True
+                        failure_index = i
                 except KeyError:
                     failure = True
+                    failure_index = i
             else:
                 failure = True
+                failure_index = i
             
     if(failure):
-        print('Mapping of the recipe has failed.')
+        print('Mapping of', recipe[failure_index][2], 'has failed.')
+        return
         
     recipe_copy = list(map(lambda x: (x[0] * x[1], x[2]), recipe_copy))
     return recipe_copy
@@ -123,6 +129,7 @@ def compute_profile(recipe, nutrients_mapping):
     sat_fat = 0
     sugar = 0
     salt = 0
+    energy = 0
     total_weight = 0
     
     for ingr in recipe:
@@ -132,9 +139,10 @@ def compute_profile(recipe, nutrients_mapping):
         sat_fat += view['Fatty acids, total saturated'].values[0]
         sugar += view['Sugars, total'].values[0]
         salt += view['Sodium, Na'].values[0] / 1000
+        energy += view['Energy'].values[0]
                 
     ratio = (100 / total_weight)
-    return fat * ratio, sat_fat * ratio, sugar * ratio, salt * ratio
+    return fat * ratio, sat_fat * ratio, sugar * ratio, salt * ratio, energy*ratio
 
 def fetch_profile_ingr(ingr, nutrients_mapping):
     nutrients_mapping = nutrients_mapping.reset_index()
@@ -145,20 +153,23 @@ def fetch_profile_ingr(ingr, nutrients_mapping):
     sat_fat = view['Fatty acids, total saturated'].values[0]
     sugar = view['Sugars, total'].values[0]
     salt = view['Sodium, Na'].values[0] / 1000
+    energy = view['Energy'].values[0]
     
-    return fat, sat_fat, sugar, salt
+    return fat, sat_fat, sugar, salt, energy
     
 
-def score(fat, sat_fat, sugar, salt):
+def score(fat, sat_fat, sugar, salt, energy):
     score_fat = score_cat(fat, 3.0, 17.5)
     score_sat_fat = score_cat(sat_fat, 1.5, 5.0)
     score_sugar = score_cat(sugar, 5.0, 22.5)
     score_salt = score_cat(salt, 0.3, 1.5)
+    score_energy = score_cat(energy, 200, 400)
     score_total = {'fat': score_fat,
                    'sat_fat' : score_sat_fat,
                    'sugar' : score_sugar,
                    'salt' : score_salt,
-                   'total' : score_fat + score_sat_fat + score_sugar + score_salt}
+                   'energy' : score_energy,
+                   'total' : score_fat + score_sat_fat + score_sugar + score_salt + score_energy}
     return score_total
     
 def score_cat(cat, medium, upper):
@@ -189,12 +200,12 @@ def beautiful_print(recipe, mapping_usda_id, nutrients_mapping, convert_gr, unit
         
     for e, ingr in enumerate(table_nut):
         weight = (mapped_recipe[e][0] / total_weight) * 100
-        print("{:20s}".format(str(recipe[e][2])) + ': ' + "{:10s}".format("{0:5.2f}".format(weight) + '% =>') + ' content(grams): ' + "(fat={0:7.4f}, sat_fat={1:7.4f}, sugar={2:7.4f}, salt={3:.4f})".format(ingr[0], ingr[1], ingr[2], ingr[3]))
+        print("{:20s}".format(str(recipe[e][2])) + ': ' + "{:10s}".format("{0:5.2f}".format(weight) + '% =>') + ' content(grams): ' + "(fat={0:7.4f}, sat_fat={1:7.4f}, sugar={2:7.4f}, salt={3:.4f}, energy={4:.4f})".format(ingr[0], ingr[1], ingr[2], ingr[3], ingr[4]))
         
         
 def compute_healthiness(recipe, mapping_usda_id, nutrients_mapping, convert_gr, unit_quantities):
     mapped_recipe = map_one_recipe_usda(recipe, mapping_usda_id, convert_gr, unit_quantities)
-    fat, sat_fat, sugar, salt = compute_profile(mapped_recipe, nutrients_mapping)
-    score_total = score(fat, sat_fat, sugar, salt)
+    fat, sat_fat, sugar, salt, energy = compute_profile(mapped_recipe, nutrients_mapping)
+    score_total = score(fat, sat_fat, sugar, salt, energy)
     beautiful_print(recipe, mapping_usda_id, nutrients_mapping, convert_gr, unit_quantities)
     return score_total
