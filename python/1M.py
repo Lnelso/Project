@@ -186,30 +186,33 @@ def init_recipes_valid(recipes, det_ingr):
 def ingredients_count(recipes, det_ingr):
     # Generate ingredients count
     ingredients_counter = collections.Counter()
-    for e, recipe in enumerate(recipes) :
-        ingredients_counter.update([c['text'] for c in det_ingr[e]['ingredients']])       
-    json.dump(ingredients_counter.most_common(), open("../generated/1m_ing_count_all.json", 'w'))
+    
+    for e, recipe in tqdm.tqdm_notebook(enumerate(recipes)) :
+        ingredients_counter.update([c['text'] for c in det_ingr[e]['ingredients']])
     
     # Filter the ingredients to keep the most important ones (appear more than 50 times)
     common_ing_counts = []
     thresh=50
+
     for c in ingredients_counter.most_common() :
         if c[1] >= thresh :
             common_ing_counts.append(c)
         else :
             break
-    json.dump(common_ing_counts, open("../generated/1m_ing_count.json", 'w'))
     
-def rewrite_recipes(recipes, det_ingr):
     rep_with_ing =[]
-    for e, r in enumerate(recipes) :
+
+    # Rewriting recipes with ingredients
+    for e, r in tqdm.tqdm_notebook(enumerate(recipes)) :
         ingredients = []
         for ing_index in range(len(r['ingredients'])) :
             ingredients.append(det_ingr[e]['ingredients'][ing_index]['text'])
 
         rep_with_ing.append(ingredients)
-    json.dump(rep_with_ing, open("../generated/1m_usda_recipes.json", 'w'))
 
+    json.dump(rep_with_ing, open("../generated/1m_recipes.json", 'w'))
+    
+    
 def main():
     # Load data
     recipes = json.load(open("../data/1M/recipe1M_layers/layer1.json"))
@@ -219,11 +222,8 @@ def main():
     # Filter recipes with only valid ingredients
     recipes, det_ingr = init_recipes_valid(recipes, det_ingr)
     
-    # Generate ingredients count
+    # Generate ingredients count and rewrite recipes with ingredients
     ingredients_count(recipes, det_ingr)
-    
-    # Rewriting recipes with ingredients
-    rewrite_recipes(recipes, det_ingr)
     
     #Extracting quantities for recipes
     measurable_indices = []
@@ -278,7 +278,6 @@ def main():
     
     # Recipes with both quantities and usda id for all ingredients
     usda_and_quant_recipes = []
-    count = 0
 
     for r in tqdm.tqdm_notebook(all_extracted) :
         ingredients_entries = []
@@ -300,9 +299,8 @@ def main():
 
         if all_actually_measurable :
             usda_and_quant_recipes.append(ingredients_entries)
-            count += 1
 
-    json.dump(usda_and_quant_recipes, open("../generated/1m_quant_usda_recipes.json", 'w'))
+    json.dump(usda_and_quant_recipes, open("../generated/1m_quant_recipes.json", 'w'))
         
     
 

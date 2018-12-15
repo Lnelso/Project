@@ -175,7 +175,7 @@ def main():
     titles_clean_cookies = np.array([x[1] for x in ids_titles_recipes_cookies])
     recipes_clean_cookies = np.array([x[2] for x in ids_titles_recipes_cookies])
     df_cookies = pd.DataFrame({'id': ids_clean_cookies, 'title': titles_clean_cookies, 'recipe': recipes_clean_cookies})
-    df_cookies.to_json("../generated/clean_cookies_recipes.json")
+    df_cookies.to_json("../generated/clean_cookies.json")
     
     with open('../data/kaggle/train.json') as f:
         data_train = json.load(f)
@@ -189,7 +189,20 @@ def main():
     # Load our dataset into a DataFrame
     df_kaggle = pd.DataFrame({'recipe':np.array(cleaned_kaggle)})
     df_kaggle = df_kaggle.reset_index().rename({'index' : 'id'}, axis = 1)
-    df_kaggle.to_json("../generated/clean_kaggle_recipes.json")
+    df_kaggle.to_json("../generated/clean_kaggle.json")
+    
+    with open('../generated/1m_recipes.json') as f:
+    data_1m = json.load(f)
+    
+    cleaned_1m_recipes = []
+    for r in tqdm(data_1m):
+        clean_recipe = clean_ingredients(r)
+        if clean_recipe:
+                clean_recipe = [x for x in clean_recipe if x != '' or x != '\'' or x != '\\n' or x != ['']]
+                if clean_recipe:
+                    cleaned_1m_recipes.append(clean_recipe)
+                    
+    json.dump(cleaned_1m_recipes,open("../generated/clean_1m.json", 'w'))
     
 if __name__ == "__main__":
     main()
