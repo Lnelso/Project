@@ -47,7 +47,7 @@ units = ["bushel", "cup", "dash", "drop", "fl." "oz", "g", "cc", "gram", "gallon
     "kg", "liter", "ml", "ounce", "c.", "pinch", "pint", "pound", "lb", "quart",
     "scoop", "shot", "tablespoon", "teaspoon", "tsp", "tbsp"]
 
-def extract_quantity(tags, recipe_index, ingredient_index) : 
+def extract_quantity(tags, recipe_index = None, ingredient_index=None) : 
     try :
         ingr  = det_ingr[recipe_index]['ingredients'][ingredient_index]['text']
         ingr_first_word = ingr.split(" ")[0]
@@ -168,6 +168,141 @@ def extract_quantity(tags, recipe_index, ingredient_index) :
                     return (string_to_float(tags[0][0]), "", ingr)
     except :
         return None
+    
+def extract_quantity_from_raw(raw_ingr) : 
+    if True:
+        tags = nltk.pos_tag(nltk.word_tokenize(raw_ingr))
+        tags_words = [t[0] for t in tags]
+
+        if ((len(tags) >= 2) and (tags[0][1] == 'CD')) :
+
+            #nb (nb+ unit) ing
+            if ((tags[1][0] == '(') and (len(tags)>6)):
+                idx_par = tags.index((')', ')'))            
+                quant_in = tags[2:idx_par-1]
+                quant=0
+
+                #nb nb 
+                if len(quant_in) == 2 :
+                    quant = (string_to_float(quant_in[0][0]) + string_to_frac(quant_in[1][0])) / 2
+                elif len(quant_in) == 1:
+                    quant = string_to_float(quant_in[0][0])
+
+                else :
+                    return None
+
+                unit = fmt_unit(tags[idx_par-1][0]) 
+                ingr = " ".join(tags_words[idx_par+1])
+                return (quant, unit, ingr)
+
+
+            #nb+ [unit] ing
+            else :
+                tag1_nb = tags[1][1] == 'CD'
+                tag1_to = tags[1][0] == 'to'
+                tag1_unit = fmt_unit(tags[1][0]) in units
+                tag1_starts_minus = tags[1][0][0] == '-'
+
+                #nb unit ing
+                if (tag1_unit) :
+                    ingr = " ".join(tags_words[2:])
+                    return (string_to_float(tags[0][0]), fmt_unit(tags[1][0]), ingr)
+
+                #nb nb ...
+                elif tag1_nb : 
+                    first_nb = string_to_float(tags[0][0]) + string_to_frac(tags[1][0])
+
+                    #nb nb unit ing
+                    if fmt_unit(tags[2][0]) in units :
+                        ingr = " ".join(tags_words[3:])
+                        return (first_nb, fmt_unit(tags[2][0]), ingr)
+
+                    #nb nb to nb ...
+                    elif tags[2][0] == 'to':
+
+                        #nb nb to nb unit ing
+                        if fmt_unit(tags[4][0]) in units :
+                            ingr = " ".join(tags_words[5:])
+                            return ((first_nb + string_to_float(tags[3][0])) / 2,  fmt_unit(tags[4][0]), ingr)
+
+                        #nb nb to nb nb ...
+                        elif tags[4][1] == 'CD' :
+
+                            second_nb = string_to_float(tags[3][0]) + string_to_frac(tags[4][0])
+                            average_qt = (first_nb + second_nb) / 2
+
+                            #nb nb to nb nb unit ing
+                            if fmt_unit(tags[5][0]) in units :
+                                ingr = " ".join(tags_words[6:])
+                                return (average_qt, fmt_unit(tags[5][0]), ingr)
+
+                            #nb nb to nb nb ing
+                            else :
+                                ingr = " ".join(tags_words[5:])
+                                return (average_qt, "", ingr)
+
+                        #nb nb to nb ing
+                        else :
+                            ingr = " ".join(tags_words[4:])
+                            return ((first_nb + string_to_float(tags[4][0])) / 2, "", ingr)
+
+                    #nb nb ing
+                    else :
+                        ingr = " ".join(tags_words[2:])
+                        return (first_nb, "", ingr)   
+
+
+
+                #nb -nb ...
+                elif tag1_starts_minus :
+                    first_nb = (string_to_float(tags[0][0]) + string_to_float(tags[1][0][1:]))/2
+
+                    #nb -nb unit ing
+                    if fmt_unit(tags[2][0]) in units :
+                        ingr = " ".join(tags_words[3:])
+                        return (first_nb, fmt_unit(tags[2][0]), ingr)
+
+                    #nb -nb ing
+                    else :
+                        ingr = " ".join(tags_words[2:])
+                        return (first_nb, "", ingr)
+
+                #nb to nb ...
+                elif (tag1_to):
+                    first_nb = string_to_float(tags[0][0])
+
+                    #nb to nb nb ...
+                    if (tags[3][1] == 'CD') :
+                        second_nb = string_to_float(tags[2][0]) + string_to_frac([3][0])
+                        avg_qt = (first_nb + second_nb) / 2
+
+                        #nb to nb nb unit ing
+                        if fmt_unit(tags[4][0]) in units :
+                            ingr = " ".join(tags_words[5:])
+                            return (avg_qt, fmt_unit(tags[4][0]), ingr)
+
+                        #nb to nb nb ing
+                        else :
+                            ingr = " ".join(tags_words[4:])
+                            return (avg_qt, "", ingr)
+
+                    #nb to nb unit ing
+                    elif (fmt_unit(tags[3][0]) in units) :
+                        second_nb = string_to_float(tags[2][0])
+                        avg_qt = (first_nb + second_nb) / 2
+                        ingr = " ".join(tags_words[4:])
+                        return (avg_qt, fmt_unit(tags[3][0]), ingr)
+
+                    #nb to nb ing
+                    else :
+                        second_nb = string_to_float(tags[2][0])
+                        avg_qt = (first_nb + second_nb) / 2
+                        ingr = " ".join(tags_words[3:])
+                        return (avg_qt, "", ingr)
+                #nb ing 
+                else :
+                    ingr = " ".join(tags_words[1:])
+                    return (string_to_float(tags[0][0]), "", ingr)
 
 def init_recipes_valid(recipes, det_ingr):
     usda_no_quant_indices = []
@@ -186,30 +321,33 @@ def init_recipes_valid(recipes, det_ingr):
 def ingredients_count(recipes, det_ingr):
     # Generate ingredients count
     ingredients_counter = collections.Counter()
-    for e, recipe in enumerate(recipes) :
-        ingredients_counter.update([c['text'] for c in det_ingr[e]['ingredients']])       
-    json.dump(ingredients_counter.most_common(), open("../generated/1m_ing_count_all.json", 'w'))
+    
+    for e, recipe in tqdm.tqdm_notebook(enumerate(recipes)) :
+        ingredients_counter.update([c['text'] for c in det_ingr[e]['ingredients']])
     
     # Filter the ingredients to keep the most important ones (appear more than 50 times)
     common_ing_counts = []
     thresh=50
+
     for c in ingredients_counter.most_common() :
         if c[1] >= thresh :
             common_ing_counts.append(c)
         else :
             break
-    json.dump(common_ing_counts, open("../generated/1m_ing_count.json", 'w'))
     
-def rewrite_recipes(recipes, det_ingr):
     rep_with_ing =[]
-    for e, r in enumerate(recipes) :
+
+    # Rewriting recipes with ingredients
+    for e, r in tqdm.tqdm_notebook(enumerate(recipes)) :
         ingredients = []
         for ing_index in range(len(r['ingredients'])) :
             ingredients.append(det_ingr[e]['ingredients'][ing_index]['text'])
 
         rep_with_ing.append(ingredients)
-    json.dump(rep_with_ing, open("../generated/1m_usda_recipes.json", 'w'))
 
+    json.dump(rep_with_ing, open("../generated/1m_recipes.json", 'w'))
+    
+    
 def main():
     # Load data
     recipes = json.load(open("../data/1M/recipe1M_layers/layer1.json"))
@@ -219,11 +357,8 @@ def main():
     # Filter recipes with only valid ingredients
     recipes, det_ingr = init_recipes_valid(recipes, det_ingr)
     
-    # Generate ingredients count
+    # Generate ingredients count and rewrite recipes with ingredients
     ingredients_count(recipes, det_ingr)
-    
-    # Rewriting recipes with ingredients
-    rewrite_recipes(recipes, det_ingr)
     
     #Extracting quantities for recipes
     measurable_indices = []
@@ -278,7 +413,6 @@ def main():
     
     # Recipes with both quantities and usda id for all ingredients
     usda_and_quant_recipes = []
-    count = 0
 
     for r in tqdm.tqdm_notebook(all_extracted) :
         ingredients_entries = []
@@ -300,9 +434,8 @@ def main():
 
         if all_actually_measurable :
             usda_and_quant_recipes.append(ingredients_entries)
-            count += 1
 
-    json.dump(usda_and_quant_recipes, open("../generated/1m_quant_usda_recipes.json", 'w'))
+    json.dump(usda_and_quant_recipes, open("../generated/1m_quant_recipes.json", 'w'))
         
     
 
