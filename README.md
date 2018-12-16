@@ -28,3 +28,4 @@ We used a word embedding algorithm (Word2Vec) to compute similarities between in
 We use the word embedding defined in the previous section to build a recommender system that can optimize the healthiness of a recipe by swapping unhealthy ingredients with healthier ones with high similarity.
 
 # Repository structure
+The project report and results notebook acn be found in the milestone 3 folder. The data folder contains raw dataset data (that were small enough, bigger datasts need to be downloaded manually). The generated folder contains intermediate results that were stored for better performance. We included only the files that were small enough. All the other files can be generated with the provided code. The scripts folder contains the python scripts of the project. The notebooks folder contains all the notebooks created for the project. The python scripts are exported notebooks so all the functions are there
