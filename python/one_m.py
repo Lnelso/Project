@@ -24,7 +24,7 @@ def clean_whole_ing(ing) : return " ".join([clean_ing_word(word) for word in ing
 def string_to_float(x) :
     try :
         x = x.split('/')
-        if len(x) > 1 :            
+        if len(x) > 1 :
             return (float(x[0])/float(x[1]))
         else :
             return float(x[0])
@@ -43,7 +43,7 @@ def string_to_frac(x) :
 def fmt_unit(x) :
     return singularize(x.lower())
 
-units = ["bushel", "cup", "dash", "drop", "fl." "oz", "g", "cc", "gram", "gallon", "glass",
+units = ["bushel", "cup", "dash", "drop", "fl.", "oz", "g", "cc", "gram", "gallon", "glass",
     "kg", "liter", "ml", "ounce", "c.", "pinch", "pint", "pound", "lb", "quart",
     "scoop", "shot", "tablespoon", "teaspoon", "tsp", "tbsp"]
 
