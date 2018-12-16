@@ -1,5 +1,0 @@
-generated/1m_ing_count.json          => List([ing_name, count])                    => Ingredients count for 1M recipes, ALL ingredients
-generated/1m_ing_count_all.json      => List([ing_name, count])                    => Ingredients count for 1M recipes, Only ingredients that appear more than 50 times
-generated/1m_usda_recipes.json       => List(List(ing_name))                       => Detected ingredients for all recipes whose ingredients are all usda mappable
-generated/1m_unit_quantities.json    => Dict(cleaned_ing_name => [quantity, unit]) => Dictionary between cleaned ingredient name (see function "clean_whole_ing") and tuple (quantity, unit). unit is 'g'.
-generated/1m_quant_usda_recipes.json => List(List([quantity, unit, ing_name]))     => List of ingredients entries (quantity, unit, name) for each recipe whose ingredients are all measurable 
