@@ -192,7 +192,7 @@ def main():
     df_kaggle.to_json("../generated/clean_kaggle.json")
     
     with open('../generated/1m_recipes.json') as f:
-    data_1m = json.load(f)
+        data_1m = json.load(f)
     
     cleaned_1m_recipes = []
     for r in tqdm(data_1m):
